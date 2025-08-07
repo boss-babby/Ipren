@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Presentation Architect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+
+      /* Custom scrollbar for a more polished look */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+
+      /* Styles for Presentation Transitions */
+      .presenter-view-host {
+        position: fixed; inset: 0; background-color: black; z-index: 50;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+      }
+      .presenter-view-container {
+        position: relative; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        overflow: hidden; /* Crucial for transitions */
+      }
+      .slide-wrapper {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        will-change: transform, opacity, clip-path;
+      }
+
+      /* FADE */
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+      /* PUSH */
+      @keyframes push-enter-forward { from { transform: translateX(100%); } to { transform: translateX(0); } }
+      @keyframes push-exit-forward { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+      @keyframes push-enter-backward { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+      @keyframes push-exit-backward { from { transform: translateX(0); } to { transform: translateX(100%); } }
+
+      /* WIPE */
+      @keyframes wipe-enter-forward { from { clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%); } to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+      @keyframes wipe-enter-backward { from { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); } to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+
+      /* ZOOM */
+      @keyframes zoom-in-enter { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes zoom-in-exit { from { transform: scale(1); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
+      @keyframes zoom-out-enter { from { transform: scale(1.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes zoom-out-exit { from { transform: scale(1); opacity: 1; } to { transform: scale(0.7); opacity: 0; } }
+      
+      /* MORPH (Fade + Scale) */
+      @keyframes morph-enter { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes morph-exit { from { transform: scale(1); opacity: 1; } to { transform: scale(0.9); opacity: 0; } }
+
+      /* Element Animations */
+      @keyframes fade-in-anim { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes fade-out-anim { from { opacity: 1; } to { opacity: 0; } }
+
+      @keyframes fly-in-anim { from { translate: 0 50px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+      @keyframes fly-out-anim { from { translate: 0 0; opacity: 1; } to { translate: 0 50px; opacity: 0; } }
+
+      @keyframes zoom-in-anim { from { scale: 0.5; opacity: 0; } to { scale: 1; opacity: 1; } }
+      @keyframes zoom-out-anim { from { scale: 1; opacity: 1; } to { scale: 0.5; opacity: 0; } }
+
+      @keyframes pulse-anim {
+          0%, 100% { scale: 1; }
+          50% { scale: 1.05; }
+      }
+
+      @keyframes spin-anim {
+          from { rotate: 0deg; }
+          to { rotate: 359deg; }
+      }
+
+      @keyframes tada-anim {
+          from { scale: 1; }
+          10%, 20% { scale: .9; rotate: -3deg; }
+          30%, 50%, 70%, 90% { scale: 1.1; rotate: 3deg; }
+          40%, 60%, 80% { scale: 1.1; rotate: -3deg; }
+          to { scale: 1; rotate: 0deg; }
+      }
+
+      /* MOTION PATHS */
+      @keyframes motion-line-right-anim { from { translate: 0 0; } to { translate: 150px 0; } }
+      @keyframes motion-line-down-anim { from { translate: 0 0; } to { translate: 0 150px; } }
+      @keyframes motion-diagonal-down-right-anim { from { translate: 0 0; } to { translate: 150px 150px; } }
+      @keyframes motion-custom-path-anim { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+
+      @media print {
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #main-app-view {
+            display: none;
+        }
+        .print-page {
+            width: 100vw;
+            height: 100vh;
+            page-break-after: always;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .print-slide-wrapper {
+            width: 1280px;
+            height: 720px;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "@google/genai": "https://esm.sh/@google/genai@1.12.0",
+    "uuid": "https://esm.sh/uuid@11.1.0",
+    "three": "https://esm.sh/three@0.166.1",
+    "three/addons/": "https://esm.sh/three@0.166.1/examples/jsm/",
+    "xlsx": "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm",
+    "pptxgenjs": "https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/+esm",
+    "three/": "https://esm.sh/three@^0.179.1/",
+    "recharts": "https://esm.sh/recharts@2.12.7",
+    "react-is": "https://esm.sh/react-is@18.3.1",
+    "jspdf": "https://esm.sh/jspdf@^3.0.1",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-200">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

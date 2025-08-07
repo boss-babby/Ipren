@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Using a CDN for Tailwind CSS for simplicity in the Apps Script environment -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* A more subtle loading spinner for a professional look */
+      .loader {
+        border: 3px solid #f3f4f6; /* gray-100 */
+        border-radius: 50%;
+        border-top: 3px solid #4f46e5; /* indigo-600 */
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      /* Ensure body takes full height for flex to work well */
+      html, body {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body class="flex flex-col h-full bg-gray-50 font-sans text-sm">
+    <div class="flex-grow p-4 space-y-4">
+      <!-- Main Prompt Input -->
+      <div>
+        <label for="prompt-input" id="prompt-label" class="block text-sm font-medium text-gray-700">Describe this slide</label>
+        <textarea id="prompt-input" rows="5" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., A 4-step timeline for a project launch with icons for each step."></textarea>
+      </div>
+
+      <!-- Mode Toggle -->
+      <div class="relative flex items-start">
+        <div class="flex items-center h-5">
+          <input id="full-presentation-checkbox" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+        </div>
+        <div class="ml-3 text-sm">
+          <label for="full-presentation-checkbox" class="font-medium text-gray-700">Generate full presentation</label>
+          <p class="text-xs text-gray-500">The AI will create a complete slide deck based on a topic.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer with Button and Status -->
+    <div class="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+      <button id="generate-btn" class="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
+        Generate
+      </button>
+      <div id="status" class="mt-2 text-xs text-gray-600 text-center h-4"></div>
+    </div>
+
+    <script>
+      const promptInput = document.getElementById('prompt-input');
+      const promptLabel = document.getElementById('prompt-label');
+      const generateBtn = document.getElementById('generate-btn');
+      const statusDiv = document.getElementById('status');
+      const isFullPresentationCheckbox = document.getElementById('full-presentation-checkbox');
+      
+      let isGenerating = false;
+
+      // Update UI based on checkbox state
+      isFullPresentationCheckbox.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        if (isChecked) {
+          promptLabel.textContent = 'Enter presentation topic';
+          promptInput.placeholder = 'e.g., The future of renewable energy';
+        } else {
+          promptLabel.textContent = 'Describe this slide';
+          promptInput.placeholder = 'e.g., A 4-step timeline for a project launch with icons for each step.';
+        }
+      });
+
+      // Main function call
+      generateBtn.addEventListener('click', () => {
+        if (isGenerating) return;
+        const prompt = promptInput.value;
+        if (!prompt.trim()) {
+          updateStatus('Please enter a prompt.', 'error');
+          return;
+        }
+
+        setLoading(true);
+        const isFullPresentation = isFullPresentationCheckbox.checked;
+
+        if (isFullPresentation) {
+          updateStatus('Generating presentation outline...', 'loading');
+          google.script.run
+            .withSuccessHandler(onSuccess)
+            .withFailureHandler(onFailure)
+            .generateFullPresentation(prompt);
+        } else {
+          updateStatus('Designing slide...', 'loading');
+          google.script.run
+            .withSuccessHandler(onSuccess)
+            .withFailureHandler(onFailure)
+            .generateContentForSlide(prompt);
+        }
+      });
+
+      function setLoading(loading) {
+        isGenerating = loading;
+        generateBtn.disabled = loading;
+        isFullPresentationCheckbox.disabled = loading;
+        promptInput.disabled = loading;
+        if (loading) {
+          generateBtn.innerHTML = '<div class="loader"></div>';
+        } else {
+          generateBtn.innerHTML = 'Generate';
+        }
+      }
+
+      function updateStatus(message, type = 'info') {
+        statusDiv.textContent = message;
+        if (type === 'error') {
+          statusDiv.classList.add('text-red-600');
+        } else {
+          statusDiv.classList.remove('text-red-600');
+        }
+      }
+
+      function onSuccess(response) {
+        setLoading(false);
+        if (response.success) {
+          updateStatus(response.message, 'success');
+          promptInput.value = ''; // Clear input on success
+        } else {
+          updateStatus('Error: ' + response.message, 'error');
+        }
+
+        // Clear status message after a few seconds
+        setTimeout(() => { updateStatus(''); }, 5000);
+      }
+
+      function onFailure(error) {
+        setLoading(false);
+        updateStatus('Script error: ' + error.message, 'error');
+
+        // Clear status message after a few seconds
+        setTimeout(() => { updateStatus(''); }, 5000);
+      }
+    </script>
+  </body>
+</html>

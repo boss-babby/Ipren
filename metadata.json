@@ -1,0 +1,6 @@
+{
+  "name": "AI Presentation Architect",
+  "description": "A full-featured, interactive presentation tool inspired by Microsoft PowerPoint, enhanced with AI-powered design suggestions and content generation from Gemini.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
