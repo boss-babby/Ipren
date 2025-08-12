@@ -322,7 +322,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ onAddElements, onGe
                                     value={numberOfSlides}
                                     onChange={e => setNumberOfSlides(parseInt(e.target.value, 10) || 1)}
                                     className="w-16 ml-2 p-1 border border-gray-300 rounded-md text-sm"
-                                    min="1" max="10"
+                                    min="1" max="30"
                                 />
                             )}
                         </div>
